@@ -4,11 +4,13 @@
 #uses those data to generate survival times,
 #merges those survival times with covariate data
 
-simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times = NULL, .id_var = "id") {
+simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times = NULL, .id_var = "id",
+                                  .rep = NULL) {
   
   require(PermAlgo)
   require(dplyr)
   
+  if (is.null(.rep) ) {.rep <- 1}
   ################################################
   # load/check covariates
   ################################################
@@ -98,7 +100,7 @@ simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times
                    "but references a file that does not exist\n",
                    ".surv_time is: ", .surv_times) )
     } else {
-      .surv_times_vector <- read.csv(file = .surv_times)[,1]
+      .surv_times_vector <- read.csv(file = .surv_times)[ , .rep]
       cat( "Survival times loaded from ", .surv_times, "\n" )
     }
   } else if( is.numeric(.surv_times) ) {
@@ -123,7 +125,11 @@ simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times
     cat( ".surv_times contains negative values, which will be set to zero\n" )
     .surv_times_vector[.surv_times_vector < 0] <- 0
   }
-  
+  if( length(.surv_times_vector) != .n_subjects ) {
+    stop( paste0("Data have ", .n_subjects, " subjects, but only ", length(.surv_times_vector),  
+                 " survival times were supplied.\n",
+                 "Number of survival times should be equal to the number of subjects.\n") )
+  }
   ################################################
   # validate and format censoring times 
   ################################################
@@ -133,7 +139,7 @@ simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times
                    "but references a file that does not exist\n",
                    ".cens_times is: ", .surv_times, "\n") )
     } else {
-      .cens_times_vector <- read.csv(file = .cens_times)[,1]
+      .cens_times_vector <- read.csv(file = .cens_times)[ , .rep]
       cat( "Censoring times loaded from ", .cens_times, "\n" )
     }
   } else if( is.numeric(.cens_times) ) {
@@ -161,7 +167,11 @@ simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times
     cat( ".cens_times contains negative values, which will be set to zero\n" )
     .cens_times_vector[.cens_times_vector < 0] <- 0
   }
-  
+  if( length(.cens_times_vector) != .n_subjects ) {
+    stop( paste0("Data have ", .n_subjects, " subjects, but only ", length(.cens_times_vector),  
+                 " censoring times were supplied.\n",
+                 "Number of censoring times should be equal to the number of subjects.\n") )
+  }
   #generate t0 variables for merging
   .covs$t0 <- rep(0:(.n_obs - 1), .n_subjects)
   
